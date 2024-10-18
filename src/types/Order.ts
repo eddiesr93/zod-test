@@ -6,5 +6,5 @@ export type Order = {
   userId: number;
   productId: number;
   quantity: number;
-  status: "pending" | "completed" | "canceled";
+  status: 'pending' | 'completed' | 'canceled';
 };

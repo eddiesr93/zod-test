@@ -6,5 +6,5 @@ export type User = {
   /** @maxLength 42	 */
   name: string;
   email?: string;
-  role: "admin" | "user";
+  role: 'admin' | 'user';
 };
