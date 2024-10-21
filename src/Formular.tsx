@@ -1,8 +1,8 @@
-import {z} from "./validation";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
+import { z } from './validation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-export default function Form() {
+export default function Formular() {
   const validationSchema = z.object({
     phone: z.string().phone(),
   });
@@ -24,13 +24,13 @@ export default function Form() {
     <form
       className={'py-10 px-20 flex flex-col gap-3'}
       onSubmit={handleSubmit(submit)}>
-      <label>Phone</label>
+      <label>Telefon</label>
       <input
-        className={'border border-blue-400 rounded'}
+        className={'border border-blue-400 rounded-md py-1'}
         {...register('phone')}
       />
-      {typeof errors.phone?.message === 'string' && <p>{errors.phone.message}</p>}
-      <input type="submit" />
+      <p className={'text-red-500'}>{errors?.phone?.message}</p>
+      <button type="submit">Submit</button>
     </form>
   );
 }
