@@ -18,7 +18,8 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
     "ts-to-zod": "^3.13.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zod-i18n-map": "^2.27.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
