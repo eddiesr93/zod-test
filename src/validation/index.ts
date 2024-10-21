@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { initPhoneValidation } from './phone/phone.ts';
+import { initCnpValidator } from './cnp/cnp.ts';
 
 declare module 'zod' {
   interface ZodString {
@@ -10,6 +11,7 @@ declare module 'zod' {
 
 export function initValidation() {
   initPhoneValidation();
+  initCnpValidator();
 }
 
 export { z };

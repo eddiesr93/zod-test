@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 export default function Formular() {
   const validationSchema = z.object({
     phone: z.string().phone(),
+    cnp: z.string().cnp(),
   });
 
   const {
@@ -30,6 +31,12 @@ export default function Formular() {
         {...register('phone')}
       />
       <p className={'text-red-500'}>{errors?.phone?.message}</p>
+      <label>CNP</label>
+      <input
+        className={'border border-blue-400 rounded-md py-1'}
+        {...register('cnp')}
+      />
+      <p className={'text-red-500'}>{errors?.cnp?.message}</p>
       <button type="submit">Submit</button>
     </form>
   );
