@@ -1,7 +1,7 @@
 import Formular from './Formular.tsx';
-import { initValidation } from './validation';
 import i18next from 'i18next';
 import { locales } from './validation/messages/locales.ts';
+import { initValidation } from './validation';
 
 i18next.init({
   lng: 'ro',
@@ -14,7 +14,6 @@ i18next.init({
 
 function App() {
   initValidation();
-
   return <Formular />;
 }
 

@@ -1,13 +1,28 @@
-import { z } from './validation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from './validation';
 
 export default function Formular() {
-  const validationSchema = z.object({
+  const baseSchema = z.object({
+    lastName: z.string().optional(),
+    role: z.union([z.literal('admin'), z.literal('user')]),
     phone: z.string().min(1).phone(),
-    cnp: z.string().cnp(),
     alphaNumeric: z.string().alphaNumeric(),
+    cnp: z.string().cnp(),
   });
+
+  const validationSchema = baseSchema.refine(
+    (data) => {
+      if (data.role === 'admin') {
+        return data.lastName && data.lastName.length >= 6;
+      }
+      return true;
+    },
+    {
+      message: "Admin's last name must be at least 6 characters long",
+      path: ['lastName'],
+    }
+  );
 
   const {
     handleSubmit,
@@ -26,6 +41,20 @@ export default function Formular() {
     <form
       className={'py-10 px-20 flex flex-col gap-3'}
       onSubmit={handleSubmit(submit)}>
+      <label>Role</label>
+      <select
+        className={'border border-blue-400 rounded-md py-1'}
+        {...register('role')}>
+        <option value="admin">Admin</option>
+        <option value="user">User</option>
+      </select>
+      <p className={'text-red-500'}>{errors?.role?.message}</p>
+      <label>Nume</label>
+      <input
+        className={'border border-blue-400 rounded-md py-1'}
+        {...register('lastName')}
+      />
+      <p className={'text-red-500'}>{errors?.lastName?.message}</p>
       <label>Telefon</label>
       <input
         className={'border border-blue-400 rounded-md py-1'}
@@ -44,7 +73,11 @@ export default function Formular() {
         {...register('alphaNumeric')}
       />
       <p className={'text-red-500'}>{errors?.alphaNumeric?.message}</p>
-      <button type="submit">Submit</button>
+      <button
+        className={'bg-blue-500 p-2 rounded-md text-white'}
+        type="submit">
+        Submit
+      </button>
     </form>
   );
 }

@@ -8,3 +8,9 @@ export const orderSchema = z.object({
   quantity: z.number(),
   status: z.union([z.literal('pending'), z.literal('completed'), z.literal('canceled')]),
 });
+
+const productSchema = z.object({
+  id: z.number().optional(),
+  name: z.string(),
+  price: z.number(),
+});

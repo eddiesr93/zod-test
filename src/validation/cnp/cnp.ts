@@ -1,7 +1,7 @@
-import * as z from 'zod';
+import { z } from '../index.ts';
 import { ValidationErrorMessages } from '../messages/ValidationErrorMessages.ts';
 
-const CNP = (value: string) => {
+export const CNP = (value: string) => {
   if (!value || value.length !== 13 || isNaN(Number(value))) {
     return false;
   }
@@ -80,17 +80,31 @@ const CNP = (value: string) => {
 };
 
 export const initCnpValidator = () => {
-  z.ZodString.prototype.cnp = function (): z.ZodString {
-    return this.refine(
-      (value) => {
-        if (!value) return true;
-        return CNP(value);
-      },
-      (value) => {
-        return {
+  z.ZodString.prototype.cnp = function () {
+    return this.superRefine((value, ctx) => {
+      if (!value) return true;
+      if (!CNP(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
           message: ValidationErrorMessages.cnp(value),
-        };
+        });
+        return false;
       }
-    ) as unknown as z.ZodString;
+      return true;
+    });
+  };
+
+  z.ZodEffects.prototype.cnp = function () {
+    return this.superRefine((value, ctx) => {
+      if (!value) return true;
+      if (!CNP(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: ValidationErrorMessages.cnp(value),
+        });
+        return false;
+      }
+      return true;
+    });
   };
 };
