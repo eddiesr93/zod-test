@@ -27,19 +27,22 @@ export default function RegistrationForm() {
   const dependencies: ZodDependencyDef<FormData>[] = [
     {
       dependentField: 'confirmPassword',
-      baseFields: ['password'],
+      baseField: 'password',
       condition: (data) => data.password === data.confirmPassword,
       expectedValue: 'identic',
     },
     {
       dependentField: 'referralCode',
-      baseFields: ['newsletterOptIn', 'age'],
-      condition: (data) => data.newsletterOptIn && data.age >= 25,
+      baseField: 'newsletterOptIn',
       expectedValue: 'completat',
+      condition: (data) => (data.newsletterOptIn ? !!data.referralCode : true),
     },
   ];
 
-  const { validationSchema } = useCustomValidation({ dependencies, fieldConfigs });
+  const { validationSchema } = useCustomValidation({
+    dependencies,
+    fieldConfigs,
+  });
 
   const {
     handleSubmit,
