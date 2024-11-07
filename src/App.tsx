@@ -1,7 +1,7 @@
-import Formular from './Formular.tsx';
 import i18next from 'i18next';
 import { locales } from './validation/messages/locales.ts';
 import { initValidation } from './validation';
+import RegistrationForm from './RegistrationForm.tsx';
 
 i18next.init({
   lng: 'ro',
@@ -14,7 +14,7 @@ i18next.init({
 
 function App() {
   initValidation();
-  return <Formular />;
+  return <RegistrationForm />;
 }
 
 export default App;
