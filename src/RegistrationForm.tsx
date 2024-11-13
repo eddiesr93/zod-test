@@ -1,7 +1,30 @@
 import { z } from './validation';
-import { useCustomValidation, ZodDependencyDef } from './hooks/useCustomValidation.tsx';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { FieldError, FieldErrors, FieldValues, ResolverResult, useForm } from 'react-hook-form';
+import { ZodError } from 'zod';
+
+// Utility function to convert ZodError to FieldErrors
+function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T> {
+  const fieldErrors: FieldErrors<T> = {};
+
+  // Explicitly type the output of `flatten` to avoid TypeScript issues
+  const flattened = error.flatten();
+  const fieldErrorEntries = Object.entries(flattened.fieldErrors) as [string, string[]][];
+
+  fieldErrorEntries.forEach(([key, messages]) => {
+    if (messages.length > 0) {
+      // Construct FieldError according to react-hook-form's expected format
+      const fieldError: FieldError = {
+        message: messages[0], // Using the first error message
+        type: 'validation',
+      };
+
+      // Cast key as keyof T since it might match fields in T
+      fieldErrors[key as keyof T] = fieldError as FieldErrors<T>[keyof T];
+    }
+  });
+
+  return fieldErrors;
+}
 
 type FormData = {
   username: string;
@@ -14,44 +37,65 @@ type FormData = {
 };
 
 export default function RegistrationForm() {
-  const fieldConfigs = {
+  const baseSchema = z.object({
     username: z.string().min(3).max(20),
     password: z.string().min(6).max(20),
     confirmPassword: z.string().min(6).max(20),
     age: z.number().min(18),
     email: z.string().email(),
-    newsletterOptIn: z.boolean(),
-    referralCode: z.string().optional(),
-  };
-
-  const dependencies: ZodDependencyDef<FormData>[] = [
-    {
-      dependentField: 'confirmPassword',
-      baseField: 'password',
-      condition: (data) => data.password === data.confirmPassword,
-      expectedValue: 'identic',
-    },
-    {
-      dependentField: 'referralCode',
-      baseField: 'newsletterOptIn',
-      expectedValue: 'completat',
-      condition: (data) => (data.newsletterOptIn ? !!data.referralCode : true),
-    },
-  ];
-
-  const { validationSchema } = useCustomValidation({
-    dependencies,
-    fieldConfigs,
   });
 
+  const validationSchema = z.union([
+    baseSchema.extend({
+      newsletterOptIn: z.literal(false),
+      referralCode: z.string().optional(),
+    }),
+    baseSchema.extend({
+      newsletterOptIn: z.literal(true),
+      referralCode: z.string().min(1),
+    }),
+  ]);
+
+  // Define the useForm with a custom resolver
   const {
     handleSubmit,
     formState: { errors },
     register,
+    watch,
   } = useForm<FormData>({
-    resolver: zodResolver(validationSchema),
     mode: 'onChange',
+    // resolver: zodResolver(validationSchema),
+    resolver: async (form): Promise<ResolverResult<FormData>> => {
+      const dynamicSchema = baseSchema.extend({
+        newsletterOptIn: z.boolean(),
+        referralCode: form.newsletterOptIn ? z.string().min(1) : z.string().optional(),
+      });
+
+      try {
+        const result = await dynamicSchema.parseAsync(form);
+        return {
+          values: result,
+          errors: {},
+        };
+      } catch (error) {
+        if (error instanceof ZodError) {
+          return {
+            values: {},
+            errors: toFieldErrors(error), // Convert ZodError to FieldErrors format
+          };
+        }
+        throw error;
+      }
+    },
   });
+
+  const watchNewsletterOptIn = watch('newsletterOptIn');
+
+  if (watchNewsletterOptIn) {
+    baseSchema.extend({
+      referralCode: z.string().min(1),
+    });
+  }
 
   const submit = (data: FormData) => {
     console.log(data);
