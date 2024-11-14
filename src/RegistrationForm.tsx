@@ -22,7 +22,7 @@ function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T
   return fieldErrors;
 }
 
-type A<TFormData extends ZodRawShape> = (form: TFormData) => ZodObject<any>;
+type A<TFormData extends FieldValues> = (form: TFormData) => ZodObject<ZodRawShape>;
 
 const customZodResolver = <TFormData extends FieldValues>(customResolver: A<TFormData>): Resolver<TFormData> => {
   return async (form: TFormData) => {
