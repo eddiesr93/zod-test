@@ -5,16 +5,17 @@ import { ZodError, ZodObject, ZodRawShape } from 'zod';
 function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T> {
   const fieldErrors: FieldErrors<T> = {};
 
+  // Flatten errors for easier parsing
   const flattened = error.flatten();
   const fieldErrorEntries = Object.entries(flattened.fieldErrors) as [string, string[]][];
 
+  // Iterate and create field error objects
   fieldErrorEntries.forEach(([key, messages]) => {
     if (messages.length > 0) {
       const fieldError: FieldError = {
-        message: messages[0],
+        message: messages[0], // Take the first error message
         type: 'validation',
       };
-
       fieldErrors[key as keyof T] = fieldError as FieldErrors<T>[keyof T];
     }
   });
@@ -22,22 +23,48 @@ function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T
   return fieldErrors;
 }
 
-type A<TFormData extends FieldValues> = (form: TFormData) => ZodObject<ZodRawShape>;
+type CustomResolverType<TFormData extends FieldValues> = (form: TFormData) => ZodObject<ZodRawShape>;
 
-const customZodResolver = <TFormData extends FieldValues>(customResolver: A<TFormData>): Resolver<TFormData> => {
+type CustomResolverOptions = {
+  mode?: 'sync' | 'async';
+  validateAllFieldCriteria?: boolean;
+};
+
+const customZodResolver = <TFormData extends FieldValues>(
+  customResolver: CustomResolverType<TFormData>,
+  options: CustomResolverOptions = {
+    mode: 'async',
+    validateAllFieldCriteria: false,
+  }
+): Resolver<TFormData> => {
   return async (form: TFormData) => {
     const schema = customResolver(form);
+
     try {
-      const result = await schema.parseAsync(form);
+      const result = options.mode === 'sync' ? schema.parse(form) : await schema.parseAsync(form);
+
       return {
         values: result,
         errors: {},
       };
     } catch (error) {
       if (error instanceof ZodError) {
+        const errors = toFieldErrors(error);
+
+        if (options.validateAllFieldCriteria) {
+          error.errors.forEach((issue) => {
+            const path = issue.path.join('.');
+            if (path && errors[path]) {
+              const currentError = errors[path];
+              currentError.types = currentError.types || {};
+              (currentError.types as Record<string, string>)[issue.code] = issue.message;
+            }
+          });
+        }
+
         return {
           values: {},
-          errors: toFieldErrors(error),
+          errors,
         };
       }
       throw error;
@@ -70,28 +97,6 @@ export default function RegistrationForm() {
     register,
   } = useForm<FormData>({
     mode: 'onChange',
-    // resolver: async (form): Promise<ResolverResult<FormData>> => {
-    //   const newValidationSchema = baseSchema.extend({
-    //     newsletterOptIn: z.boolean(),
-    //     referralCode: form.newsletterOptIn ? z.string().min(1) : z.string().optional(),
-    //   });
-    //
-    //   try {
-    //     const result = await newValidationSchema.parseAsync(form);
-    //     return {
-    //       values: result,
-    //       errors: {},
-    //     };
-    //   } catch (error) {
-    //     if (error instanceof ZodError) {
-    //       return {
-    //         values: {},
-    //         errors: toFieldErrors(error),
-    //       };
-    //     }
-    //     throw error;
-    //   }
-    // },
     resolver: customZodResolver((form) => {
       return baseSchema.extend({
         newsletterOptIn: z.boolean(),
