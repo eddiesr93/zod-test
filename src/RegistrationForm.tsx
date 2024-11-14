@@ -23,7 +23,9 @@ function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T
   return fieldErrors;
 }
 
-type CustomResolverType<TFormData extends FieldValues> = (form: TFormData) => ZodObject<ZodRawShape>;
+type CustomResolverType<TFormData extends FieldValues> =
+  | ZodObject<ZodRawShape>
+  | ((form: TFormData) => ZodObject<ZodRawShape>);
 
 type CustomResolverOptions = {
   mode?: 'sync' | 'async';
@@ -38,7 +40,7 @@ const customZodResolver = <TFormData extends FieldValues>(
   }
 ): Resolver<TFormData> => {
   return async (form: TFormData) => {
-    const schema = customResolver(form);
+    const schema = typeof customResolver === 'function' ? customResolver(form) : customResolver;
 
     try {
       const result = options.mode === 'sync' ? schema.parse(form) : await schema.parseAsync(form);
@@ -97,6 +99,7 @@ export default function RegistrationForm() {
     register,
   } = useForm<FormData>({
     mode: 'onChange',
+    // resolver: customZodResolver(baseSchema),
     resolver: customZodResolver((form) => {
       return baseSchema.extend({
         newsletterOptIn: z.boolean(),
