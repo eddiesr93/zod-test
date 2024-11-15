@@ -23,18 +23,18 @@ function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T
   return fieldErrors;
 }
 
-type CustomResolverType<TFormData extends FieldValues> =
+type CustomZodResolverType<TFormData extends FieldValues> =
   | ZodObject<ZodRawShape>
   | ((form: TFormData) => ZodObject<ZodRawShape>);
 
-type CustomResolverOptions = {
+type CustomZodResolverOptions = {
   mode?: 'sync' | 'async';
   validateAllFieldCriteria?: boolean;
 };
 
 const customZodResolver = <TFormData extends FieldValues>(
-  customResolver: CustomResolverType<TFormData>,
-  options: CustomResolverOptions = {
+  customResolver: CustomZodResolverType<TFormData>,
+  options: CustomZodResolverOptions = {
     mode: 'async',
     validateAllFieldCriteria: false,
   }
