@@ -1,49 +1,6 @@
 import { z } from './validation';
-import { FieldError, FieldErrors, FieldValues, Resolver, useForm } from 'react-hook-form';
-import { ZodError, ZodObject, ZodRawShape } from 'zod';
-
-function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T> {
-  const fieldErrors: FieldErrors<T> = {};
-
-  const flattened = error.flatten();
-  const fieldErrorEntries = Object.entries(flattened.fieldErrors) as [string, string[]][];
-
-  fieldErrorEntries.forEach(([key, messages]) => {
-    if (messages.length > 0) {
-      const fieldError: FieldError = {
-        message: messages[0],
-        type: 'validation',
-      };
-
-      fieldErrors[key as keyof T] = fieldError as FieldErrors<T>[keyof T];
-    }
-  });
-
-  return fieldErrors;
-}
-
-type A<TFormData extends FieldValues> = (form: TFormData) => ZodObject<ZodRawShape>;
-
-const customZodResolver = <TFormData extends FieldValues>(customResolver: A<TFormData>): Resolver<TFormData> => {
-  return async (form: TFormData) => {
-    const schema = customResolver(form);
-    try {
-      const result = await schema.parseAsync(form);
-      return {
-        values: result,
-        errors: {},
-      };
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return {
-          values: {},
-          errors: toFieldErrors(error),
-        };
-      }
-      throw error;
-    }
-  };
-};
+import { useForm } from 'react-hook-form';
+import { customZodResolver } from './resolver/customZodResolver';
 
 type FormData = {
   username: string;
@@ -57,11 +14,13 @@ type FormData = {
 
 export default function RegistrationForm() {
   const baseSchema = z.object({
-    username: z.string().min(3).max(20),
+    username: z.string().min(3).max(20).alphaNumeric(),
     password: z.string().min(6).max(20),
     confirmPassword: z.string().min(6).max(20),
     age: z.number().min(18),
     email: z.string().email(),
+    newsletterOptIn: z.boolean(),
+    referralCode: z.string().optional(),
   });
 
   const {
@@ -70,34 +29,16 @@ export default function RegistrationForm() {
     register,
   } = useForm<FormData>({
     mode: 'onChange',
-    // resolver: async (form): Promise<ResolverResult<FormData>> => {
-    //   const newValidationSchema = baseSchema.extend({
-    //     newsletterOptIn: z.boolean(),
-    //     referralCode: form.newsletterOptIn ? z.string().min(1) : z.string().optional(),
-    //   });
-    //
-    //   try {
-    //     const result = await newValidationSchema.parseAsync(form);
-    //     return {
-    //       values: result,
-    //       errors: {},
-    //     };
-    //   } catch (error) {
-    //     if (error instanceof ZodError) {
-    //       return {
-    //         values: {},
-    //         errors: toFieldErrors(error),
-    //       };
-    //     }
-    //     throw error;
-    //   }
-    // },
-    resolver: customZodResolver((form) => {
-      return baseSchema.extend({
-        newsletterOptIn: z.boolean(),
-        referralCode: form.newsletterOptIn ? z.string().min(1) : z.string().optional(),
-      });
-    }),
+    // resolver: customZodResolver(baseSchema),
+    resolver: customZodResolver(
+      (form) => {
+        return baseSchema.extend({
+          newsletterOptIn: z.boolean(),
+          referralCode: form.newsletterOptIn ? z.string().min(1) : z.string().optional(),
+        });
+      },
+      { validateAllFieldCriteria: true }
+    ),
   });
 
   const submit = (data: FormData) => {
@@ -113,7 +54,15 @@ export default function RegistrationForm() {
         className={'border border-blue-400 rounded-md py-1'}
         {...register('username')}
       />
-      <p className={'text-red-500'}>{errors?.username?.message}</p>
+      {errors.username?.types &&
+        Object.values(errors.username?.types).map((error, index) => (
+          <p
+            key={index}
+            className={'text-red-500'}>
+            {error}
+          </p>
+        ))}
+      {/*<p className={'text-red-500'}>{errors?.username?.message}</p>*/}
       <label>Password</label>
       <input
         className={'border border-blue-400 rounded-md py-1'}
