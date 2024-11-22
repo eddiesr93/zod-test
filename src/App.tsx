@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { locales } from './validation/messages/locales.ts';
 import { initValidation } from './validation';
 import RegistrationForm from './RegistrationForm.tsx';
+import { useEffect } from 'react';
 
 i18next.init({
   lng: 'ro',
@@ -13,7 +14,10 @@ i18next.init({
 });
 
 function App() {
-  initValidation();
+  useEffect(() => {
+    initValidation();
+  }, []);
+
   return <RegistrationForm />;
 }
 

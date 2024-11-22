@@ -4,15 +4,13 @@ import { ZodError, ZodObject, ZodRawShape } from 'zod';
 function toFieldErrors<T extends FieldValues>(error: ZodError<T>): FieldErrors<T> {
   const fieldErrors: FieldErrors<T> = {};
 
-  // Flatten errors for easier parsing
   const flattened = error.flatten();
   const fieldErrorEntries = Object.entries(flattened.fieldErrors) as [string, string[]][];
 
-  // Iterate and create field error objects
   fieldErrorEntries.forEach(([key, messages]) => {
     if (messages.length > 0) {
       const fieldError: FieldError = {
-        message: messages[0], // Take the first error message
+        message: messages[0],
         type: 'validation',
       };
       fieldErrors[key as keyof T] = fieldError as FieldErrors<T>[keyof T];
